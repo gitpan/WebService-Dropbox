@@ -9,7 +9,7 @@ use String::Random qw(random_regex);
 use URI;
 use URI::Escape;
 
-our $VERSION = '1.06';
+our $VERSION = '1.07';
 
 my $request_token_url = 'https://api.dropbox.com/1/oauth/request_token';
 my $access_token_url = 'https://api.dropbox.com/1/oauth/access_token';
@@ -31,9 +31,10 @@ __PACKAGE__->mk_accessors(qw/
     request_url
     request_method
     timeout
+    lwp_env_proxy
 /);
 
-my $use_lwp;
+$WebService::Dropbox::USE_LWP = 0;
 
 sub import {
     eval {
@@ -41,7 +42,7 @@ sub import {
     };if ($@) {
         require LWP::UserAgent;
         require HTTP::Request;
-        $use_lwp++;
+        $WebService::Dropbox::USE_LWP++;
     }
 }
 
@@ -58,7 +59,8 @@ sub new {
         root           => $args->{root}           || 'dropbox',
         timeout        => $args->{timeout}        || (60 * 60 * 24),
         no_decode_json => $args->{no_decode_json} || 0,
-        no_uri_escape  => $args->{no_uri_escape}  || 0
+        no_uri_escape  => $args->{no_uri_escape}  || 0,
+        lwp_env_proxy  => $args->{lwp_env_proxy}  || 0
     }, $class;
 }
 
@@ -157,6 +159,17 @@ sub metadata {
     });
 }
 
+sub delta {
+    my ($self, $params) = @_;
+
+    $params ||= {};
+
+    $self->api_json({
+        method => 'POST',
+        url => $self->url('https://api.dropbox.com/1/delta', '', $params)
+    });
+}
+
 sub revisions {
     my ($self, $path, $params) = @_;
 
@@ -200,6 +213,15 @@ sub media {
     });
 }
 
+sub copy_ref {
+    my ($self, $path, $params) = @_;
+
+    $self->api_json({
+        method => 'GET',
+        url => $self->url('https://api.dropbox.com/1/copy_ref/' . $self->root, $path, $params)
+    });
+}
+
 sub thumbnails {
     my ($self, $path, $output, $params, $opts) = @_;
 
@@ -235,12 +257,16 @@ sub create_folder {
 }
 
 sub copy {
-    my ($self, $from_path, $to_path, $params) = @_;
+    my ($self, $from, $to_path, $params) = @_;
 
     $params ||= {};
     $params->{root} ||= $self->root;
-    $params->{from_path} = $self->path($from_path);
-    $params->{to_path}   = $self->path($to_path);
+    $params->{to_path} = $self->path($to_path);
+    if (ref $from) {
+        $params->{from_copy_ref} = $from->{copy_ref};
+    } else {
+        $params->{from_path} = $self->path($from);
+    }
 
     $self->api_json({
         method => 'POST',
@@ -285,7 +311,7 @@ sub api {
     $self->request_url($args->{url});
     $self->request_method($args->{method});
 
-    return $self->api_lwp($args) if $use_lwp;
+    return $self->api_lwp($args) if $WebService::Dropbox::USE_LWP;
 
     my ($minor_version, $code, $msg, $headers, $body) = $self->furl->request(%$args);
 
@@ -332,6 +358,7 @@ sub api_lwp {
     my $req = HTTP::Request->new($args->{method}, $args->{url}, $headers, $args->{content});
     my $ua = LWP::UserAgent->new;
     $ua->timeout($self->timeout);
+    $ua->env_proxy if $self->lwp_env_proxy;
     my $res = $ua->request($req, $args->{write_code});
     $self->code($res->code);
     if ($res->is_success) {
@@ -562,9 +589,15 @@ L<https://www.dropbox.com/developers/reference/api#files-GET>
 
 L<https://www.dropbox.com/developers/reference/api#files_put>
 
-=head2 copy(from_path, to_path)
+=head2 copy(from_path or from_copy_ref, to_path)
 
+    # from_path
     $dropbox->copy('folder/test.txt', 'folder/test_copy.txt') or die $dropbox->error;
+
+    # from_copy_ref
+    my $copy_ref = $dropbox->copy_ref('folder/test.txt') or die $dropbox->error;
+
+    $dropbox->copy($copy_ref, 'folder/test_copy.txt') or die $dropbox->error;
 
 L<https://www.dropbox.com/developers/reference/api#fileops-copy>
 
@@ -604,6 +637,12 @@ L<https://www.dropbox.com/developers/reference/api#fileops-create-folder>
 
 L<https://www.dropbox.com/developers/reference/api#metadata>
 
+=head2 delta([params]) - get file list
+
+    my $data = $dropbox->delta() or die $dropbox->error;
+
+L<https://www.dropbox.com/developers/reference/api#delta>
+
 =head2 revisions(path, [params])
 
     my $data = $dropbox->revisions('some_file') or die $dropbox->error;
@@ -636,6 +675,14 @@ L<https://www.dropbox.com/developers/reference/api#shares>
 
 L<https://www.dropbox.com/developers/reference/api#media>
 
+=head2 copy_ref(path)
+
+    my $copy_ref = $dropbox->copy_ref('folder/test.txt') or die $dropbox->error;
+
+    $dropbox->copy($copy_ref, 'folder/test_copy.txt') or die $dropbox->error;
+
+L<https://www.dropbox.com/developers/reference/api#copy_ref>
+
 =head2 thumbnails(path, output)
 
     my $fh_get = File::Temp->new;
@@ -644,6 +691,11 @@ L<https://www.dropbox.com/developers/reference/api#media>
     $fh_get->seek(0, 0);
 
 L<https://www.dropbox.com/developers/reference/api#thumbnails>
+
+=head2 lwp_env_proxy(0 or 1)
+
+    # $lwp->env_proxy;
+    $dropbox->lwp_env_proxy(1);
 
 =head1 AUTHOR
 

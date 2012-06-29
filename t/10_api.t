@@ -96,6 +96,9 @@ if ($exists and !$exists->{is_deleted}) {
 my $metadata = $dropbox->metadata('make_test_folder/test.txt')
     or die $dropbox->error;
 
+my $delta = $dropbox->delta()
+    or die $dropbox->error;
+
 my $revisions = $dropbox->revisions('make_test_folder/test.txt')
     or die $dropbox->error;
 
@@ -142,6 +145,18 @@ $exists = $dropbox->metadata('make_test_folder/test2.txt');
 
 if ($exists and !$exists->{is_deleted}) {
     pass "copy.";
+}
+
+my $copy_ref = $dropbox->copy_ref('make_test_folder/test2.txt')
+    or die $dropbox->error;
+
+$copy = $dropbox->copy($copy_ref, 'make_test_folder/test3.txt')
+    or die $dropbox->error;
+
+$exists = $dropbox->metadata('make_test_folder/test3.txt');
+
+if ($exists and !$exists->{is_deleted}) {
+    pass "copy_ref.";
 }
 
 my $move = $dropbox->move('make_test_folder/test2.txt', 'make_test_folder/test2b.txt')
