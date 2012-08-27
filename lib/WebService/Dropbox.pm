@@ -9,7 +9,7 @@ use String::Random qw(random_regex);
 use URI;
 use URI::Escape;
 
-our $VERSION = '1.07';
+our $VERSION = '1.08';
 
 my $request_token_url = 'https://api.dropbox.com/1/oauth/request_token';
 my $access_token_url = 'https://api.dropbox.com/1/oauth/access_token';
@@ -25,7 +25,6 @@ __PACKAGE__->mk_accessors(qw/
     root
 
     no_decode_json
-    no_uri_escape
     error
     code
     request_url
@@ -147,6 +146,73 @@ sub files_post {
         method => 'POST',
         url => $self->url('https://api-content.dropbox.com/1/files/' . $self->root, $path, $params),
         content => $content,
+        %$opts
+    });
+}
+
+sub files_put_chunked {
+    my ($self, $path, $content, $params, $opts, $limit) = @_;
+
+    $limit ||= 4 * 1024 * 1024; # A typical chunk is 4 MB
+
+    my $upload;
+    $upload = sub {
+        my $data = shift;
+        my $buf;
+        my $total = $limit;
+        my $chunk = 1024;
+        my $tmp = File::Temp->new;
+        while (my $read = read($content, $buf, $chunk)) {
+            $tmp->print($buf);
+            $total -= $read;
+            if ($chunk > $total) {
+                $chunk = $total;
+            }
+            last unless $chunk;
+        }
+
+        if ($total == $limit) {
+            $data->{upload_id} or die 'read error.';
+            return $self->commit_chunked_upload(
+                $path, {
+                    upload_id => $data->{upload_id},
+                    ( $params ? %$params : () )
+                }, $opts) or die $self->error;
+        }
+
+        $tmp->flush;
+        $tmp->seek(0, 0);
+        $data = $self->chunked_upload($tmp, {
+            ( $data   ? %$data   : () ),
+            ( $params ? %$params : () )
+        }, $opts) or die $self->error;
+        $upload->({
+            upload_id => $data->{upload_id},
+            offset    => $data->{offset}
+        });
+    };
+    $upload->();
+}
+
+sub chunked_upload {
+    my ($self, $content, $params, $opts) = @_;
+
+    $opts ||= {};
+    $self->api_json({
+        method => 'PUT',
+        url => $self->url('https://api-content.dropbox.com/1/chunked_upload', '', $params),
+        content => $content,
+        %$opts
+    });
+}
+
+sub commit_chunked_upload {
+    my ($self, $path, $params, $opts) = @_;
+
+    $opts ||= {};
+    $self->api_json({
+        method => 'POST',
+        url => $self->url('https://api-content.dropbox.com/1/commit_chunked_upload/' . $self->root, $path, $params),
         %$opts
     });
 }
@@ -294,7 +360,6 @@ sub delete {
     $params ||= {};
     $params->{root} ||= $self->root;
     $params->{path} = $self->path($path);
-
     $self->api_json({
         method => 'POST',
         url => $self->url('https://api.dropbox.com/1/fileops/delete', '', $params)
@@ -428,7 +493,7 @@ sub furl {
 
 sub url {
     my ($self, $base, $path, $params) = @_;
-    my $url = URI->new($base . $self->path($path));
+    my $url = URI->new($base . uri_escape_utf8($self->path($path), q{^a-zA-Z0-9_./-}));
     $url->query_form($params) if $params;
     $url->as_string;
 }
@@ -437,9 +502,8 @@ sub path {
     my ($self, $path) = @_;
     return '' unless defined $path;
     return '' unless length $path;
-    $path=~s|^/||;
-    return '/' . $path if $self->no_uri_escape;
-    return '/' . uri_escape_utf8($path, q{^a-zA-Z0-9_./-});
+    $path =~ s|^/||;
+    return '/' . $path;
 }
 
 sub nonce { random_regex('\w{16}'); }
@@ -573,7 +637,7 @@ L<https://www.dropbox.com/developers/reference/api#account-info>
 
 L<https://www.dropbox.com/developers/reference/api#files-GET>
 
-=head2 files_put(path, input) - upload
+=head2 files_put(path, input) - Uploads a files
 
     my $fh_put = IO::File->new('some file');
     $dropbox->files_put('folder/test.txt', $fh_put) or die $dropbox->error;
@@ -588,6 +652,52 @@ L<https://www.dropbox.com/developers/reference/api#files-GET>
     # conflict prevention
 
 L<https://www.dropbox.com/developers/reference/api#files_put>
+
+=head2 files_put_chunked(path, input) - Uploads large files by chunked_upload and commit_chunked_upload.
+
+    my $fh_put = IO::File->new('some large file');
+    $dropbox->files_put('folder/test.txt', $fh_put) or die $dropbox->error;
+    $fh_put->close;
+
+L<https://www.dropbox.com/developers/reference/api#chunked_upload>
+
+=head2 chunked_upload(input, [params]) - Uploads large files
+
+    # large file 1/3
+    my $fh_put = IO::File->new('large file part 1');
+    my $data = $dropbox->chunked_upload($fh_put) or die $dropbox->error;
+    $fh_put->close;
+
+    # large file 2/3
+    $fh_put = IO::File->new('large file part 2');
+    $data = $dropbox->chunked_upload($fh_put, {
+        upload_id => $data->{upload_id},
+        offset => $data->{offset}
+    }) or die $dropbox->error;
+    $fh_put->close;
+
+    # large file 3/3
+    $fh_put = IO::File->new('large file part 3');
+    $data = $dropbox->chunked_upload($fh_put, {
+        upload_id => $data->{upload_id},
+        offset => $data->{offset}
+    }) or die $dropbox->error;
+    $fh_put->close;
+
+    # commit
+    $dropbox->commit_chunked_upload('folder/test.txt', {
+        upload_id => $data->{upload_id}
+    }) or die $dropbox->error;
+
+L<https://www.dropbox.com/developers/reference/api#chunked_upload>
+
+=head2 commit_chunked_upload(path, params) - Completes an upload initiated by the chunked_upload method.
+
+    $dropbox->commit_chunked_upload('folder/test.txt', {
+        upload_id => $data->{upload_id}
+    }) or die $dropbox->error;
+
+L<https://www.dropbox.com/developers/reference/api#commit_chunked_upload>
 
 =head2 copy(from_path or from_copy_ref, to_path)
 
