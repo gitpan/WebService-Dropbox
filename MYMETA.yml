@@ -24,4 +24,4 @@ requires:
   Net::OAuth: 0.28
   URI: 1.60
   perl: 5.008001
-version: 1.15
+version: 1.16
