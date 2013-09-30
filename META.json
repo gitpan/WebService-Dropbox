@@ -4,7 +4,7 @@
       "Shinichiro Aska <s.aska.org@gmail.com>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 6.74, CPAN::Meta::Converter version 2.132140",
    "license" : [
       "unknown"
    ],
@@ -27,11 +27,12 @@
       },
       "configure" : {
          "requires" : {
-            "ExtUtils::MakeMaker" : "0"
+            "ExtUtils::MakeMaker::CPANfile" : "0.04"
          }
       },
       "runtime" : {
          "requires" : {
+            "ExtUtils::MakeMaker" : "6.17",
             "Furl" : "1.01",
             "IO::Socket::SSL" : "1.77",
             "JSON" : "2.53",
@@ -42,5 +43,5 @@
       }
    },
    "release_status" : "stable",
-   "version" : "1.18"
+   "version" : "1.19"
 }
