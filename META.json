@@ -1,12 +1,12 @@
 {
-   "abstract" : "unknown",
+   "abstract" : "Perl interface to Dropbox API",
    "author" : [
-      "Shinichiro Aska <s.aska.org@gmail.com>"
+      "Shinichiro Aska"
    ],
-   "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.74, CPAN::Meta::Converter version 2.132140",
+   "dynamic_config" : 0,
+   "generated_by" : "Minilla/v0.7.2",
    "license" : [
-      "unknown"
+      "perl_5"
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
@@ -16,32 +16,73 @@
    "no_index" : {
       "directory" : [
          "t",
-         "inc"
+         "xt",
+         "inc",
+         "share",
+         "eg",
+         "examples",
+         "author"
       ]
    },
    "prereqs" : {
-      "build" : {
-         "requires" : {
-            "ExtUtils::MakeMaker" : "0"
-         }
-      },
       "configure" : {
          "requires" : {
-            "ExtUtils::MakeMaker::CPANfile" : "0.04"
+            "CPAN::Meta" : "0",
+            "CPAN::Meta::Prereqs" : "0",
+            "Module::Build" : "0.38"
+         }
+      },
+      "develop" : {
+         "requires" : {
+            "Test::CPAN::Meta" : "0",
+            "Test::MinimumVersion" : "0.10108",
+            "Test::Pod" : "1.41",
+            "Test::Spellunker" : "v0.2.7"
          }
       },
       "runtime" : {
+         "recommends" : {
+            "Furl" : "2.19",
+            "IO::Socket::SSL" : "1.954",
+            "Software::License" : "0"
+         },
          "requires" : {
-            "ExtUtils::MakeMaker" : "6.17",
-            "Furl" : "1.01",
-            "IO::Socket::SSL" : "1.77",
-            "JSON" : "2.53",
+            "JSON" : "2.59",
+            "LWP::Protocol::https" : "6.04",
+            "LWP::UserAgent" : "6.05",
             "Net::OAuth" : "0.28",
             "URI" : "1.60",
             "perl" : "5.008001"
          }
+      },
+      "test" : {
+         "requires" : {
+            "Test::More" : "0.98"
+         }
+      }
+   },
+   "provides" : {
+      "WebService::Dropbox" : {
+         "file" : "lib/WebService/Dropbox.pm",
+         "version" : "1.20"
       }
    },
    "release_status" : "stable",
-   "version" : "1.19"
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/s-aska/p5-WebService-Dropbox/issues"
+      },
+      "homepage" : "https://github.com/s-aska/p5-WebService-Dropbox",
+      "repository" : {
+         "url" : "git://github.com/s-aska/p5-WebService-Dropbox.git",
+         "web" : "https://github.com/s-aska/p5-WebService-Dropbox"
+      }
+   },
+   "version" : "1.20",
+   "x_authority" : "cpan:ASKADNA",
+   "x_contributors" : [
+      "Fuji, Goro <g.psy.va@gmail.com>",
+      "Rostislav Georgiev <pisaro@mail.bg>",
+      "Shinichiro Aska <s.aska.org@gmail.com>"
+   ]
 }

@@ -1,11 +1,16 @@
-cpanfile
+Build.PL
 Changes
+LICENSE
+META.json
+README.md
+cpanfile
 lib/WebService/Dropbox.pm
-Makefile.PL
-MANIFEST			This list of files
-README
+minil.toml
 t/00_compile.t
+t/05_accessor.t
 t/10_api.t
+t/11_range.t
+t/12_304.t
 t/sample.png
-META.yml                                 Module YAML meta-data (added by MakeMaker)
-META.json                                Module JSON meta-data (added by MakeMaker)
+META.yml
+MANIFEST
