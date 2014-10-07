@@ -3,17 +3,17 @@ abstract: 'Perl interface to Dropbox API'
 author:
   - 'Shinichiro Aska'
 build_requires:
-  Test::More: 0.98
+  Test::More: '0.98'
 configure_requires:
-  CPAN::Meta: 0
-  CPAN::Meta::Prereqs: 0
-  Module::Build: 0.38
+  CPAN::Meta: '0'
+  CPAN::Meta::Prereqs: '0'
+  Module::Build: '0.38'
 dynamic_config: 0
-generated_by: 'Minilla/v0.7.2, CPAN::Meta::Converter version 2.132140'
+generated_by: 'Minilla/v0.7.2, CPAN::Meta::Converter version 2.142690'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
+  version: '1.4'
 name: WebService-Dropbox
 no_index:
   directory:
@@ -27,24 +27,24 @@ no_index:
 provides:
   WebService::Dropbox:
     file: lib/WebService/Dropbox.pm
-    version: 1.21
+    version: '1.22'
 recommends:
-  Furl: 2.19
-  IO::Socket::SSL: 1.954
-  Software::License: 0
+  Furl: '2.19'
+  IO::Socket::SSL: '1.954'
+  Software::License: '0'
 requires:
-  HTTP::Message: 6.06
-  JSON: 2.59
-  LWP::Protocol::https: 6.04
-  LWP::UserAgent: 6.05
-  Net::OAuth: 0.28
-  URI: 1.60
-  perl: 5.008001
+  HTTP::Message: '6.06'
+  JSON: '2.59'
+  LWP::Protocol::https: '6.04'
+  LWP::UserAgent: '6.05'
+  Net::OAuth: '0.28'
+  URI: '1.60'
+  perl: '5.008001'
 resources:
   bugtracker: https://github.com/s-aska/p5-WebService-Dropbox/issues
   homepage: https://github.com/s-aska/p5-WebService-Dropbox
   repository: git://github.com/s-aska/p5-WebService-Dropbox.git
-version: 1.21
+version: '1.22'
 x_authority: cpan:ASKADNA
 x_contributors:
   - 'Fuji, Goro <g.psy.va@gmail.com>'
